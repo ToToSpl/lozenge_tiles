@@ -1,6 +1,6 @@
 use image;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Point {
     x: f32,
     y: f32,
@@ -20,12 +20,12 @@ fn main() {
     let imgx = 800;
     let imgy = 800;
 
-    let a = Point::new(100.0, 100.0);
-    let b = Point::new(700.0, 100.0);
-    let c = Point::new(400.0, 700.0);
+    let a = Point::new(100.0, 700.0);
+    let b = Point::new(400.0, 100.0);
+    let c = Point::new(700.0, 700.0);
 
-    let vec_ab = Point::new(b.x - a.x, b.y - a.y);
-    let vec_bc = Point::new(c.x - b.x, c.y - b.y);
+    let vec_ab = Point::new(a.x - b.x, a.y - b.y);
+    let vec_bc = Point::new(b.x - c.x, b.y - c.y);
     let vec_ca = Point::new(c.x - a.x, c.y - a.y);
 
     // Create a new ImgBuf with width: imgx and height: imgy
@@ -45,8 +45,8 @@ fn main() {
             let v_b = Point::new(x as f32 - b.x, y as f32 - b.y);
             let v_c = Point::new(x as f32 - c.x, y as f32 - c.y);
 
-            let test_ab = Point::cross_mag(&v_a, &vec_ab) <= 0.0;
-            let test_bc = Point::cross_mag(&v_b, &vec_bc) <= 0.0;
+            let test_ab = Point::cross_mag(&v_a, &vec_ab) >= 0.0;
+            let test_bc = Point::cross_mag(&v_b, &vec_bc) >= 0.0;
             let test_ca = Point::cross_mag(&v_c, &vec_ca) >= 0.0;
 
             if test_ab && test_bc && test_ca {
