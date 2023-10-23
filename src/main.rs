@@ -1,32 +1,18 @@
 use image;
 
 #[derive(Clone)]
-struct Complex {
-    rel: f32,
-    img: f32,
+struct Point {
+    x: f32,
+    y: f32,
 }
 
-impl Complex {
-    fn new(rel: f32, img: f32) -> Complex {
-        Self { rel, img }
+impl Point {
+    fn new(x: f32, y: f32) -> Point {
+        Point { x, y }
     }
 
-    fn norm(&self) -> f32 {
-        f32::sqrt(self.rel * self.rel + self.img * self.img)
-    }
-
-    fn mul(a: &Complex, b: &Complex) -> Complex {
-        Complex {
-            rel: (a.rel * b.rel) - (a.img * b.img),
-            img: (a.rel * b.img) + (a.img * b.rel),
-        }
-    }
-
-    fn add(a: &Complex, b: &Complex) -> Complex {
-        Complex {
-            rel: a.rel + b.rel,
-            img: a.img + b.img,
-        }
+    fn cross_mag(a: &Point, b: &Point) -> f32 {
+        a.x * b.y - a.y * b.x
     }
 }
 
@@ -34,8 +20,13 @@ fn main() {
     let imgx = 800;
     let imgy = 800;
 
-    let scalex = 3.0 / imgx as f32;
-    let scaley = 3.0 / imgy as f32;
+    let a = Point::new(100.0, 100.0);
+    let b = Point::new(700.0, 100.0);
+    let c = Point::new(400.0, 700.0);
+
+    let vec_ab = Point::new(b.x - a.x, b.y - a.y);
+    let vec_bc = Point::new(c.x - b.x, c.y - b.y);
+    let vec_ca = Point::new(c.x - a.x, c.y - a.y);
 
     // Create a new ImgBuf with width: imgx and height: imgy
     let mut imgbuf = image::ImageBuffer::new(imgx, imgy);
@@ -50,21 +41,19 @@ fn main() {
     // A redundant loop to demonstrate reading image data
     for x in 0..imgx {
         for y in 0..imgy {
-            let cx = y as f32 * scalex - 1.5;
-            let cy = x as f32 * scaley - 1.5;
+            let v_a = Point::new(x as f32 - a.x, y as f32 - a.y);
+            let v_b = Point::new(x as f32 - b.x, y as f32 - b.y);
+            let v_c = Point::new(x as f32 - c.x, y as f32 - c.y);
 
-            let c = Complex::new(-0.4, 0.6);
-            let mut z = Complex::new(cx, cy);
+            let test_ab = Point::cross_mag(&v_a, &vec_ab) <= 0.0;
+            let test_bc = Point::cross_mag(&v_b, &vec_bc) <= 0.0;
+            let test_ca = Point::cross_mag(&v_c, &vec_ca) >= 0.0;
 
-            let mut i = 0;
-            while i < 255 && z.norm() <= 2.0 {
-                z = Complex::add(&Complex::mul(&z, &z), &c);
-                i += 1;
+            if test_ab && test_bc && test_ca {
+                let pixel = imgbuf.get_pixel_mut(x, y);
+                let image::Rgb(data) = *pixel;
+                *pixel = image::Rgb([data[0], 255 as u8, data[2]]);
             }
-
-            let pixel = imgbuf.get_pixel_mut(x, y);
-            let image::Rgb(data) = *pixel;
-            *pixel = image::Rgb([data[0], i as u8, data[2]]);
         }
     }
 
