@@ -41,10 +41,10 @@ fn draw_triangle_equilateral(
     let vec_bc = Point::new(b.x - c.x, b.y - c.y);
     let vec_ca = Point::new(c.x - a.x, c.y - a.y);
 
-    let min_x = a.x.min(f32::min(b.x, c.x)) as u32;
-    let max_x = a.x.max(f32::max(b.x, c.x)) as u32;
-    let min_y = a.y.min(f32::min(b.y, c.y)) as u32;
-    let max_y = a.y.max(f32::max(b.y, c.y)) as u32;
+    let min_x = f32::floor(a.x.min(f32::min(b.x, c.x))) as u32;
+    let max_x = f32::ceil(a.x.max(f32::max(b.x, c.x))) as u32;
+    let min_y = f32::floor(a.y.min(f32::min(b.y, c.y))) as u32;
+    let max_y = f32::ceil(a.y.max(f32::max(b.y, c.y))) as u32;
 
     // println!("{:}, {:}\n{:}, {:}", min_x, max_x, min_y, max_y);
 
@@ -74,10 +74,8 @@ fn main() {
     let mut imgbuf = image::ImageBuffer::new(imgx as u32, imgy as u32);
 
     // Iterate over the coordinates and pixels of the image
-    for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
-        let r = (0.3 * x as f32) as u8;
-        let b = (0.3 * y as f32) as u8;
-        *pixel = image::Rgb([r, 0, b]);
+    for (_x, _y, pixel) in imgbuf.enumerate_pixels_mut() {
+        *pixel = image::Rgb([255, 255, 255]);
     }
 
     let colors = vec![
@@ -89,23 +87,60 @@ fn main() {
         image::Rgb([255, 127, 0]),
         image::Rgb([255, 0, 0]),
     ];
-    let mut i = 0;
     let height = 50 as usize;
 
-    // A redundant loop to demonstrate reading image data
-    for x in (height..imgx).step_by(height) {
-        for y in (height..imgy).step_by(height) {
+    let y_step = (f32::sqrt(3.0) / 3.0) * (height as f32);
+    let mut y = 100.0;
+    let mut y_i = 0;
+    while y < 700.0 {
+        let mut x = if y_i % 2 == 0 {
+            100.0
+        } else {
+            100.0 - (1.0 / 3.0 * height as f32)
+        };
+        let mut x_i = if y_i % 2 == 0 { 0 } else { 1 };
+        let mut angle = if y_i % 2 == 0 {
+            std::f32::consts::FRAC_PI_6
+        } else {
+            -std::f32::consts::FRAC_PI_6
+        };
+
+        while x < 700.0 {
             draw_triangle_equilateral(
                 &mut imgbuf,
                 height as f32,
                 Point::new(x as f32, y as f32),
-                i as f32 * std::f32::consts::FRAC_PI_8,
-                colors[i % colors.len()],
+                angle,
+                colors[(y_i + x_i) % colors.len()],
             );
 
-            i += 1;
+            if x_i % 2 == 0 {
+                x += (2.0 / 3.0) * height as f32;
+            } else {
+                x += (4.0 / 3.0) * height as f32;
+            }
+            x_i += 1;
+            angle += std::f32::consts::PI;
         }
+
+        y += y_step;
+        y_i += 1;
     }
+
+    // // A redundant loop to demonstrate reading image data
+    // for x in (height..imgx).step_by(height) {
+    //     for y in (height..imgy).step_by(height) {
+    //         draw_triangle_equilateral(
+    //             &mut imgbuf,
+    //             height as f32,
+    //             Point::new(x as f32, y as f32),
+    //             i as f32 * std::f32::consts::PI,
+    //             colors[i % colors.len()],
+    //         );
+    //
+    //         i += 1;
+    //     }
+    // }
 
     // Save the image as “fractal.png”, the format is deduced from the path
     imgbuf.save("triangles.png").unwrap();
