@@ -1,6 +1,6 @@
 use image;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 struct Point {
     x: f32,
     y: f32,
@@ -66,6 +66,68 @@ fn draw_triangle_equilateral(
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+struct GridTriangle {
+    x: usize,
+    y: usize,
+    triangle_height: f32,
+    start_point: Point,
+}
+
+impl GridTriangle {
+    fn new(x: usize, y: usize, triangle_height: f32, start_point: Point) -> GridTriangle {
+        GridTriangle {
+            x,
+            y,
+            triangle_height,
+            start_point,
+        }
+    }
+
+    fn draw(
+        self,
+        buf: &mut image::ImageBuffer<image::Rgb<u8>, Vec<u8>>,
+        x: usize,
+        y: usize,
+        color: image::Rgb<u8>,
+    ) {
+        if x >= self.x || y >= self.y {
+            panic!("Tried to draw triangle at {:}, {:}", x, y);
+        }
+
+        let mut angle = if y % 2 == 0 {
+            std::f32::consts::FRAC_PI_6
+        } else {
+            -std::f32::consts::FRAC_PI_6
+        };
+
+        let mut x_coord = self.start_point.x;
+        if y % 2 == 1 {
+            x_coord -= 1.0 / 3.0 * self.triangle_height;
+        }
+        x_coord += ((x / 2) as f32) * 2.0 * self.triangle_height;
+        if x % 2 == 1 {
+            if y % 2 == 0 {
+                x_coord += (2.0 / 3.0) * self.triangle_height;
+            } else {
+                x_coord += (4.0 / 3.0) * self.triangle_height;
+            }
+            angle += std::f32::consts::PI;
+        }
+
+        let y_coord =
+            self.start_point.y + (y as f32) * (f32::sqrt(3.0) / 3.0) * self.triangle_height;
+
+        draw_triangle_equilateral(
+            buf,
+            self.triangle_height,
+            Point::new(x_coord as f32, y_coord as f32),
+            angle,
+            color,
+        );
+    }
+}
+
 fn main() {
     let imgx = 800 as usize;
     let imgy = 800 as usize;
@@ -79,68 +141,17 @@ fn main() {
     }
 
     let colors = vec![
-        image::Rgb([148, 0, 211]),
-        image::Rgb([75, 0, 130]),
-        image::Rgb([0, 0, 255]),
-        image::Rgb([0, 255, 0]),
-        image::Rgb([255, 255, 0]),
-        image::Rgb([255, 127, 0]),
-        image::Rgb([255, 0, 0]),
+        image::Rgb([105, 154, 225]),
+        image::Rgb([225, 117, 46]),
+        image::Rgb([114, 225, 105]),
     ];
-    let height = 50 as usize;
 
-    let y_step = (f32::sqrt(3.0) / 3.0) * (height as f32);
-    let mut y = 100.0;
-    let mut y_i = 0;
-    while y < 700.0 {
-        let mut x = if y_i % 2 == 0 {
-            100.0
-        } else {
-            100.0 - (1.0 / 3.0 * height as f32)
-        };
-        let mut x_i = if y_i % 2 == 0 { 0 } else { 1 };
-        let mut angle = if y_i % 2 == 0 {
-            std::f32::consts::FRAC_PI_6
-        } else {
-            -std::f32::consts::FRAC_PI_6
-        };
-
-        while x < 700.0 {
-            draw_triangle_equilateral(
-                &mut imgbuf,
-                height as f32,
-                Point::new(x as f32, y as f32),
-                angle,
-                colors[(y_i + x_i) % colors.len()],
-            );
-
-            if x_i % 2 == 0 {
-                x += (2.0 / 3.0) * height as f32;
-            } else {
-                x += (4.0 / 3.0) * height as f32;
-            }
-            x_i += 1;
-            angle += std::f32::consts::PI;
+    let grid = GridTriangle::new(13, 22, 50.0, Point::new(100.0, 100.0));
+    for y in 0..grid.y {
+        for x in 0..grid.x {
+            grid.draw(&mut imgbuf, x, y, colors[(x + y) % colors.len()]);
         }
-
-        y += y_step;
-        y_i += 1;
     }
-
-    // // A redundant loop to demonstrate reading image data
-    // for x in (height..imgx).step_by(height) {
-    //     for y in (height..imgy).step_by(height) {
-    //         draw_triangle_equilateral(
-    //             &mut imgbuf,
-    //             height as f32,
-    //             Point::new(x as f32, y as f32),
-    //             i as f32 * std::f32::consts::PI,
-    //             colors[i % colors.len()],
-    //         );
-    //
-    //         i += 1;
-    //     }
-    // }
 
     // Save the image as “fractal.png”, the format is deduced from the path
     imgbuf.save("triangles.png").unwrap();
