@@ -6,8 +6,8 @@ mod grid_triangle;
 use grid_triangle::GridTriangle;
 
 fn main() {
-    let imgx = 800 as usize;
-    let imgy = 800 as usize;
+    let imgx = 450 as usize;
+    let imgy = 450 as usize;
 
     // Create a new ImgBuf with width: imgx and height: imgy
     let mut imgbuf = image::ImageBuffer::new(imgx as u32, imgy as u32);
@@ -23,7 +23,7 @@ fn main() {
         image::Rgb([114, 225, 105]),
     ];
 
-    let grid = GridTriangle::new(13, 22, 50.0, Point::new(100.0, 100.0));
+    let grid = GridTriangle::new(6, 11, 50.0, Point::new(100.0, 100.0));
     for y in 0..grid.y {
         for x in 0..grid.x {
             grid.draw(&mut imgbuf, x, y, colors[(x + y) % colors.len()]);
