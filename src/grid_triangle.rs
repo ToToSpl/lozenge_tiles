@@ -1,5 +1,3 @@
-use image;
-
 use super::Point;
 
 #[derive(Clone, Copy, Debug)]
@@ -57,7 +55,7 @@ impl GridTriangle {
         draw_triangle_equilateral(
             buf,
             self.triangle_height,
-            Point::new(x_coord as f32, y_coord as f32),
+            Point::new(x_coord, y_coord),
             angle,
             color,
         );
@@ -90,9 +88,9 @@ fn draw_triangle_equilateral(
     let vec_ca = Point::new(c.x - a.x, c.y - a.y);
 
     let min_x = f32::floor(a.x.min(f32::min(b.x, c.x))) as u32;
-    let max_x = f32::ceil(a.x.max(f32::max(b.x, c.x))) as u32;
+    let max_x = u32::min(f32::ceil(a.x.max(f32::max(b.x, c.x))) as u32, buf.width());
     let min_y = f32::floor(a.y.min(f32::min(b.y, c.y))) as u32;
-    let max_y = f32::ceil(a.y.max(f32::max(b.y, c.y))) as u32;
+    let max_y = u32::min(f32::ceil(a.y.max(f32::max(b.y, c.y))) as u32, buf.height());
 
     // println!("{:}, {:}\n{:}, {:}", min_x, max_x, min_y, max_y);
 
