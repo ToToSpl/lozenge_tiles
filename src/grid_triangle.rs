@@ -1,7 +1,7 @@
 use crate::AppState;
 
 use super::Point;
-
+/*
 #[derive(Clone, Copy, Debug)]
 pub struct GridTriangle {
     pub width: usize,
@@ -69,6 +69,7 @@ impl GridTriangle {
         );
     }
 }
+*/
 
 pub fn draw_triangle_equilateral(
     state: &mut AppState,
