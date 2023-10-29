@@ -2,17 +2,22 @@ use super::Point;
 
 #[derive(Clone, Copy, Debug)]
 pub struct GridTriangle {
-    pub x: usize,
-    pub y: usize,
+    pub width: usize,
+    pub height: usize,
     pub triangle_height: f32,
     pub start_point: Point,
 }
 
 impl GridTriangle {
-    pub fn new(x: usize, y: usize, triangle_height: f32, start_point: Point) -> GridTriangle {
+    pub fn new(
+        width: usize,
+        height: usize,
+        triangle_height: f32,
+        start_point: Point,
+    ) -> GridTriangle {
         GridTriangle {
-            x,
-            y,
+            width,
+            height,
             triangle_height,
             start_point,
         }
@@ -25,7 +30,7 @@ impl GridTriangle {
         y: usize,
         color: image::Rgb<u8>,
     ) {
-        if x >= self.x || y >= self.y {
+        if x >= self.width || y >= self.height {
             panic!("Tried to draw triangle at {:}, {:}", x, y);
         }
 
