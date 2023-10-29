@@ -1,4 +1,6 @@
-use crate::grid_triangle::draw_triangle_equilateral;
+use crate::AppState;
+
+use super::grid_triangle::draw_triangle_equilateral;
 
 use super::Point;
 
@@ -22,7 +24,7 @@ enum HexagonColors {
 }
 
 pub fn draw_hexagon(
-    buf: &mut image::ImageBuffer<image::Rgb<u8>, Vec<u8>>,
+    state: &mut AppState,
     center: Point,
     sub_triangle_height: f32,
     kind: HexagonKind,
@@ -62,14 +64,14 @@ pub fn draw_hexagon(
     match colors {
         HexagonColors::OneColor(col) => {
             for (i, p) in points.iter().enumerate() {
-                draw_triangle_equilateral(buf, sub_triangle_height, *p, ANGLES[i % 2], col)
+                draw_triangle_equilateral(state, sub_triangle_height, *p, ANGLES[i % 2], col)
             }
         }
         HexagonColors::TwoColor((cols, start)) => {
             let mut i_p = start;
             for i in 0..points.len() {
                 draw_triangle_equilateral(
-                    buf,
+                    state,
                     sub_triangle_height,
                     points[i_p as usize],
                     ANGLES[(i_p % 2) as usize],
@@ -83,7 +85,7 @@ pub fn draw_hexagon(
             let mut i_p = start;
             for i in 0..points.len() {
                 draw_triangle_equilateral(
-                    buf,
+                    state,
                     sub_triangle_height,
                     points[i_p as usize],
                     ANGLES[(i_p % 2) as usize],

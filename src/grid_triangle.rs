@@ -1,3 +1,5 @@
+use crate::AppState;
+
 use super::Point;
 
 #[derive(Clone, Copy, Debug)]
@@ -25,7 +27,8 @@ impl GridTriangle {
 
     pub fn draw(
         self,
-        buf: &mut image::ImageBuffer<image::Rgb<u8>, Vec<u8>>,
+        state: &mut AppState,
+        // buf: &mut image::ImageBuffer<image::Rgb<u8>, Vec<u8>>,
         x: usize,
         y: usize,
         color: image::Rgb<u8>,
@@ -58,7 +61,7 @@ impl GridTriangle {
             self.start_point.y + (y as f32) * (f32::sqrt(3.0) / 3.0) * self.triangle_height;
 
         draw_triangle_equilateral(
-            buf,
+            state,
             self.triangle_height,
             Point::new(x_coord, y_coord),
             angle,
@@ -68,12 +71,22 @@ impl GridTriangle {
 }
 
 pub fn draw_triangle_equilateral(
-    buf: &mut image::ImageBuffer<image::Rgb<u8>, Vec<u8>>,
+    state: &mut AppState,
+    // buf: &mut image::ImageBuffer<image::Rgb<u8>, Vec<u8>>,
     height: f32,
     center: Point,
     angle: f32,
     color: image::Rgb<u8>,
 ) {
+    // check if triangle already drawn
+    {
+        let coord = state.rounder.get_coord(center.x, center.y);
+        if state.triangles_drawn.contains(&coord) {
+            return;
+        } else {
+            state.triangles_drawn.insert(coord);
+        }
+    }
     let mag = (2.0 / 3.0) * height;
     let c = Point::new(
         center.x + mag * f32::sin(0.0 + angle),
@@ -93,9 +106,15 @@ pub fn draw_triangle_equilateral(
     let vec_ca = Point::new(c.x - a.x, c.y - a.y);
 
     let min_x = f32::floor(a.x.min(f32::min(b.x, c.x))) as u32;
-    let max_x = u32::min(f32::ceil(a.x.max(f32::max(b.x, c.x))) as u32, buf.width());
+    let max_x = u32::min(
+        f32::ceil(a.x.max(f32::max(b.x, c.x))) as u32,
+        state.buf.width(),
+    );
     let min_y = f32::floor(a.y.min(f32::min(b.y, c.y))) as u32;
-    let max_y = u32::min(f32::ceil(a.y.max(f32::max(b.y, c.y))) as u32, buf.height());
+    let max_y = u32::min(
+        f32::ceil(a.y.max(f32::max(b.y, c.y))) as u32,
+        state.buf.height(),
+    );
 
     // println!("{:}, {:}\n{:}, {:}", min_x, max_x, min_y, max_y);
 
@@ -110,7 +129,7 @@ pub fn draw_triangle_equilateral(
             let test_ca = Point::cross_mag(&v_c, &vec_ca) >= 0.0;
 
             if test_ab && test_bc && test_ca {
-                let pixel = buf.get_pixel_mut(x, y);
+                let pixel = state.buf.get_pixel_mut(x, y);
                 *pixel = color;
             }
         }

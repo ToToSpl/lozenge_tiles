@@ -1,14 +1,23 @@
+use std::collections::{HashMap, HashSet};
 mod point;
+use grid_hexagon::draw_hexagon;
 use point::Point;
-mod grid_triangle;
-use grid_triangle::GridTriangle;
 mod grid_hexagon;
+mod grid_triangle;
+use grid_hexagon::HexagonKind;
 mod grid_rounder;
 use grid_rounder::GridRounder;
 
+pub struct AppState<'a> {
+    pub buf: &'a mut image::ImageBuffer<image::Rgb<u8>, Vec<u8>>,
+    pub hexagon_map: &'a mut HashMap<(i32, i32), HexagonKind>,
+    pub triangles_drawn: &'a mut HashSet<(i32, i32)>,
+    pub rounder: &'a GridRounder,
+}
+
 fn main() {
-    let imgx = 450_usize;
-    let imgy = 450_usize;
+    let imgx = 851_usize;
+    let imgy = 851_usize;
 
     // Create a new ImgBuf with width: imgx and height: imgy
     let mut imgbuf = image::ImageBuffer::new(imgx as u32, imgy as u32);
@@ -18,21 +27,10 @@ fn main() {
         *pixel = image::Rgb([255, 255, 255]);
     }
 
-    let colors = [
-        image::Rgb([105, 154, 225]),
-        image::Rgb([225, 117, 46]),
-        image::Rgb([114, 225, 105]),
-    ];
-
     let triangle_height = 50.0;
 
-    let grid = GridTriangle::new(6, 11, triangle_height, Point::new(109.0, 81.0));
-    for y in 0..grid.height {
-        for x in 0..grid.width {
-            grid.draw(&mut imgbuf, x, y, colors[(x + y) % colors.len()]);
-        }
-    }
-
+    let mut hexagon_map: HashMap<(i32, i32), HexagonKind> = HashMap::new();
+    let mut triangles_drawn: HashSet<(i32, i32)> = HashSet::new();
     let center = Point::new(imgx as f32 / 2.0, imgy as f32 / 2.0);
     let rounder = GridRounder::new(
         center,
@@ -40,18 +38,47 @@ fn main() {
         triangle_height / f32::sqrt(3.0),
     );
 
-    for y in 0..imgy {
-        for x in 0..imgx {
-            let coords = rounder.get_coord((x as f32) - center.x, (y as f32) - center.y);
-            let coord_x = (coords.0 + center.x as i32) as u32;
-            let coord_y = (coords.1 + center.y as i32) as u32;
-            if coord_x >= imgx as u32 || coord_y >= imgy as u32 {
-                continue;
-            }
+    let mut state = AppState {
+        buf: &mut imgbuf,
+        hexagon_map: &mut hexagon_map,
+        triangles_drawn: &mut triangles_drawn,
+        rounder: &rounder,
+    };
 
-            let pixel = imgbuf.get_pixel_mut(coord_x, coord_y);
-            *pixel = image::Rgb([0, 0, 0]);
+    state
+        .hexagon_map
+        .insert(rounder.get_coord(0.0, 0.0), HexagonKind::Inside123);
+    {
+        let kinds = [
+            HexagonKind::Vertical12,
+            HexagonKind::Diagonal23,
+            HexagonKind::Diagonal31,
+        ];
+        let mut points = [Point::new(0.0, 0.0); 3];
+
+        let mut angle = -std::f32::consts::FRAC_PI_2;
+        for i in 0..points.len() {
+            points[i].x = 2.0 * triangle_height / f32::sqrt(3.0) * f32::cos(angle);
+            points[i].y = 2.0 * triangle_height / f32::sqrt(3.0) * f32::sin(angle);
+            angle += 2.0 * std::f32::consts::FRAC_PI_3;
         }
+
+        for i in 1..6 {
+            for (j, p) in points.iter().enumerate() {
+                state
+                    .hexagon_map
+                    .insert(rounder.get_coord(i as f32 * p.x, i as f32 * p.y), kinds[j]);
+            }
+        }
+    }
+
+    for (coord, kind) in state.hexagon_map.clone() {
+        draw_hexagon(
+            &mut state,
+            Point::new(center.x + coord.0 as f32, center.y + coord.1 as f32),
+            1.01 * triangle_height,
+            kind,
+        );
     }
 
     imgbuf.save("triangles.png").unwrap();
