@@ -67,7 +67,7 @@ impl GridTriangle {
     }
 }
 
-fn draw_triangle_equilateral(
+pub fn draw_triangle_equilateral(
     buf: &mut image::ImageBuffer<image::Rgb<u8>, Vec<u8>>,
     height: f32,
     center: Point,
