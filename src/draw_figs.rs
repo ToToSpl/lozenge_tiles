@@ -9,6 +9,9 @@ pub enum HexagonKind {
     Vertical12,
     Diagonal23,
     Diagonal31,
+    Edge1,
+    Edge2,
+    Edge3,
     Inside123,
     Outside123,
     Forbidden,
@@ -18,6 +21,7 @@ enum HexagonColors {
     OneColor(image::Rgb<u8>),
     TwoColor(([image::Rgb<u8>; 2], u8)),
     ThreeColor(([image::Rgb<u8>; 3], u8)),
+    ThreeColorAssym(([image::Rgb<u8>; 3], u8)),
 }
 
 pub fn draw_hexagon(
@@ -54,6 +58,9 @@ pub fn draw_hexagon(
         HexagonKind::Diagonal23 => HexagonColors::TwoColor(([COLOR2, COLOR3], 1)),
         HexagonKind::Diagonal31 => HexagonColors::TwoColor(([COLOR3, COLOR1], 3)),
         HexagonKind::Inside123 => HexagonColors::ThreeColor(([COLOR1, COLOR2, COLOR3], 0)),
+        HexagonKind::Edge1 => HexagonColors::ThreeColorAssym(([COLOR1, COLOR3, COLOR2], 5)),
+        HexagonKind::Edge2 => HexagonColors::ThreeColorAssym(([COLOR2, COLOR1, COLOR3], 1)),
+        HexagonKind::Edge3 => HexagonColors::ThreeColorAssym(([COLOR3, COLOR2, COLOR1], 3)),
         HexagonKind::Outside123 => HexagonColors::ThreeColor(([COLOR1, COLOR2, COLOR3], 3)),
         HexagonKind::Forbidden => panic!("Should not happen!"),
     };
@@ -87,6 +94,21 @@ pub fn draw_hexagon(
                     points[i_p as usize],
                     ANGLES[(i_p % 2) as usize],
                     cols[i / 2],
+                );
+
+                i_p = (i_p + 1) % points.len() as u8;
+            }
+        }
+        HexagonColors::ThreeColorAssym((cols, start)) => {
+            let mut i_p = start;
+            for i in 0..points.len() {
+                let col = if i <= 3 { cols[0] } else { cols[i - 3] };
+                draw_triangle_equilateral(
+                    state,
+                    sub_triangle_height,
+                    points[i_p as usize],
+                    ANGLES[(i_p % 2) as usize],
+                    col,
                 );
 
                 i_p = (i_p + 1) % points.len() as u8;
