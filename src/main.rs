@@ -2,21 +2,22 @@ use std::collections::{HashMap, HashSet};
 mod point;
 use point::Point;
 mod draw_figs;
-use draw_figs::{draw_hexagon, HexagonKind};
+use draw_figs::{Hexagon, HexagonKind};
 mod grid_rounder;
 use grid_rounder::GridRounder;
 
 pub struct AppState<'a> {
     pub buf: &'a mut image::ImageBuffer<image::Rgb<u8>, Vec<u8>>,
-    pub hexagon_map: &'a mut HashMap<(i32, i32), HexagonKind>,
+    pub hexagon_map: &'a mut HashMap<(i32, i32), Hexagon>,
     pub triangles_drawn: &'a mut HashSet<(i32, i32)>,
     pub rounder: &'a GridRounder,
 }
 
 fn generate_hexagon(state: &mut AppState, side_len: usize, triangle_height: f32) {
-    state
-        .hexagon_map
-        .insert(state.rounder.get_coord(0.0, 0.0), HexagonKind::Inside123);
+    state.hexagon_map.insert(
+        state.rounder.get_coord(0.0, 0.0),
+        Hexagon::new(HexagonKind::Inside123),
+    );
 
     let kinds = [
         HexagonKind::Vertical12,
@@ -34,9 +35,10 @@ fn generate_hexagon(state: &mut AppState, side_len: usize, triangle_height: f32)
 
     for i in 1..side_len {
         for (p, k) in std::iter::zip(points, kinds) {
-            state
-                .hexagon_map
-                .insert(state.rounder.get_coord(i as f32 * p.x, i as f32 * p.y), k);
+            state.hexagon_map.insert(
+                state.rounder.get_coord(i as f32 * p.x, i as f32 * p.y),
+                Hexagon::new(k),
+            );
         }
     }
 
@@ -92,11 +94,17 @@ fn generate_hexagon(state: &mut AppState, side_len: usize, triangle_height: f32)
             checks[i] = Point::cross_mag(&curr_vec, &dir_vecs[2 * i + 1]) > 0.0;
         }
         if checks[0] && !checks[1] {
-            state.hexagon_map.insert(curr, HexagonKind::Fill1);
+            state
+                .hexagon_map
+                .insert(curr, Hexagon::new(HexagonKind::Fill1));
         } else if checks[1] && !checks[2] {
-            state.hexagon_map.insert(curr, HexagonKind::Fill2);
+            state
+                .hexagon_map
+                .insert(curr, Hexagon::new(HexagonKind::Fill2));
         } else if checks[2] && !checks[0] {
-            state.hexagon_map.insert(curr, HexagonKind::Fill3);
+            state
+                .hexagon_map
+                .insert(curr, Hexagon::new(HexagonKind::Fill3));
         }
     }
 }
@@ -115,7 +123,7 @@ fn main() {
 
     let triangle_height = 50.0;
 
-    let mut hexagon_map: HashMap<(i32, i32), HexagonKind> = HashMap::new();
+    let mut hexagon_map: HashMap<(i32, i32), Hexagon> = HashMap::new();
     let mut triangles_drawn: HashSet<(i32, i32)> = HashSet::new();
     let center = Point::new(imgx as f32 / 2.0, imgy as f32 / 2.0);
     let rounder = GridRounder::new(
@@ -133,14 +141,19 @@ fn main() {
 
     generate_hexagon(&mut state, 6, triangle_height);
 
-    for (coord, kind) in state.hexagon_map.clone() {
-        draw_hexagon(
+    for (coord, hex) in state.hexagon_map.clone() {
+        hex.draw(
             &mut state,
             Point::new(center.x + coord.0 as f32, center.y + coord.1 as f32),
             1.01 * triangle_height,
-            kind,
         );
+
+        let pixel = state.buf.get_pixel_mut(
+            (coord.0 + center.x as i32) as u32,
+            (coord.1 + center.y as i32) as u32,
+        );
+        *pixel = image::Rgb([0, 0, 0]);
     }
 
-    imgbuf.save("triangles.png").unwrap();
+    state.buf.save("triangles.png").unwrap();
 }
