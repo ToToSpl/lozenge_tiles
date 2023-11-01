@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 mod point;
 use point::Point;
-mod draw_figs;
-use draw_figs::{Hexagon, HexagonKind};
+mod hexagon;
+use hexagon::{Hexagon, HexagonKind};
 mod grid_rounder;
 use grid_rounder::GridRounder;
 
