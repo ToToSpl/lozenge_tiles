@@ -1,21 +1,45 @@
+use rand::Rng;
 use std::collections::{HashMap, HashSet};
+use tqdm::tqdm;
 mod point;
 use point::Point;
 mod hexagon;
 use hexagon::{
-    Hexagon, HexagonColor, HEX_EDGE1, HEX_EDGE2, HEX_EDGE3, HEX_FILL1, HEX_FILL2, HEX_FILL3,
-    HEX_INSIDE, HEX_OUTSIDE,
+    Hexagon, HEX_EDGE1, HEX_EDGE2, HEX_EDGE3, HEX_FILL1, HEX_FILL2, HEX_FILL3, HEX_INSIDE,
+    HEX_OUTSIDE,
 };
 mod grid_rounder;
 use grid_rounder::GridRounder;
+
+const ITER_AMOUNT: usize = 1_000_000;
+const IMAGE_WIDTH: usize = 8501;
+const IMAGE_HEIGHT: usize = 8501;
+const HEXAGON_LEN: usize = 60;
+const TRIANGLE_HEIGHT: f32 = 50.0;
+const COLOR1: [u8; 3] = [225, 117, 46];
+const COLOR2: [u8; 3] = [114, 225, 105];
+const COLOR3: [u8; 3] = [105, 154, 225];
 
 pub struct AppState<'a> {
     pub buf: &'a mut image::ImageBuffer<image::Rgb<u8>, Vec<u8>>,
     pub hexagon_map: &'a mut HashMap<(i32, i32), Hexagon>,
     pub triangles_drawn: &'a mut HashSet<(i32, i32)>,
+    pub modifiable_hexagons: &'a mut HashSet<(i32, i32)>,
     pub rounder: &'a GridRounder,
     pub colors: [image::Rgb<u8>; 3],
     pub triangle_height: f32,
+}
+
+fn get_random_from_set(set: &mut HashSet<(i32, i32)>) -> (i32, i32) {
+    let len = set.len();
+    if len == 0 {
+        panic!("Set cannot be zero len!");
+    }
+    let rand_num = rand::thread_rng().gen_range(0..len);
+    match set.iter().skip(rand_num).next() {
+        Some(elem) => *elem,
+        None => panic!("Should contain element in this range!"),
+    }
 }
 
 fn generate_hexagon(state: &mut AppState, side_len: usize) {
@@ -103,27 +127,36 @@ fn generate_hexagon(state: &mut AppState, side_len: usize) {
             state.hexagon_map.insert(curr, Hexagon::new(HEX_FILL2));
         }
     }
+    state.modifiable_hexagons.insert((0, 0));
 }
 
-fn change_hex_grid(
-    state: &mut AppState,
-    coord: &(i32, i32),
-    into: &[HexagonColor; 6],
-) -> Result<(), ()> {
-    if let Some(hex) = state.hexagon_map.get_mut(coord) {
-        hex.tiles = *into;
+fn change_hex_grid(state: &mut AppState, coord: &(i32, i32)) -> Result<(), ()> {
+    let hex = if let Some(hex) = state.hexagon_map.get_mut(coord) {
+        hex
     } else {
         return Result::Err(());
-    }
+    };
+
+    let into = if hex.is_inside() {
+        HEX_OUTSIDE
+    } else {
+        HEX_INSIDE
+    };
+
+    hex.tiles = into;
+
     let mut angle = -std::f32::consts::FRAC_PI_2;
     for i in 0..6 {
         let x = coord.0 as f32 + 2.0 * state.triangle_height / f32::sqrt(3.0) * f32::cos(angle);
         let y = coord.1 as f32 + 2.0 * state.triangle_height / f32::sqrt(3.0) * f32::sin(angle);
         let c = state.rounder.get_coord(x, y);
         if let Some(hex_neigh) = state.hexagon_map.get_mut(&c) {
-            hex_neigh.change_state((i + 3) % 6, into);
-        } else {
-            println!("miss");
+            hex_neigh.change_state((i + 3) % 6, &into);
+            if hex_neigh.is_inside() || hex_neigh.is_outside() {
+                state.modifiable_hexagons.insert(c);
+            } else {
+                state.modifiable_hexagons.remove(&c);
+            }
         }
         angle += std::f32::consts::FRAC_PI_3;
     }
@@ -131,14 +164,11 @@ fn change_hex_grid(
 }
 
 fn main() {
-    let imgx = 851_usize;
-    let imgy = 851_usize;
-    let triangle_height = 50.0;
+    let imgx = IMAGE_WIDTH;
+    let imgy = IMAGE_HEIGHT;
+    let triangle_height = TRIANGLE_HEIGHT;
 
-    // Create a new ImgBuf with width: imgx and height: imgy
     let mut imgbuf = image::ImageBuffer::new(imgx as u32, imgy as u32);
-
-    // Iterate over the coordinates and pixels of the image
     for (_x, _y, pixel) in imgbuf.enumerate_pixels_mut() {
         *pixel = image::Rgb([255, 255, 255]);
     }
@@ -156,34 +186,31 @@ fn main() {
         buf: &mut imgbuf,
         hexagon_map: &mut hexagon_map,
         triangles_drawn: &mut triangles_drawn,
+        modifiable_hexagons: &mut HashSet::new(),
         rounder: &rounder,
-        colors: [
-            image::Rgb([225, 117, 46]),
-            image::Rgb([114, 225, 105]),
-            image::Rgb([105, 154, 225]),
-        ],
+        colors: [image::Rgb(COLOR1), image::Rgb(COLOR2), image::Rgb(COLOR3)],
         triangle_height,
     };
 
-    generate_hexagon(&mut state, 6);
+    generate_hexagon(&mut state, HEXAGON_LEN);
+    println!("INFO: Begin monte carlo roll");
+    for _ in tqdm(0..ITER_AMOUNT) {
+        if state.modifiable_hexagons.len() == 0 {
+            println!("INFO: Reached locked state. Exiting prematurly");
+            break;
+        }
+        let rand_coord = get_random_from_set(state.modifiable_hexagons);
+        let _ = change_hex_grid(&mut state, &rand_coord);
+    }
 
-    let _ = change_hex_grid(&mut state, &(0, 0), &HEX_OUTSIDE);
-    let _ = change_hex_grid(&mut state, &(0, -57), &HEX_OUTSIDE);
-    let _ = change_hex_grid(&mut state, &(50, 28), &HEX_OUTSIDE);
-    let _ = change_hex_grid(&mut state, &(-50, 28), &HEX_OUTSIDE);
-
+    println!("INFO: Drawing into image...");
     for (coord, hex) in state.hexagon_map.clone() {
         hex.draw(
             &mut state,
             Point::new(center.x + coord.0 as f32, center.y + coord.1 as f32),
         );
-
-        let pixel = state.buf.get_pixel_mut(
-            ((coord.0 + center.x as i32) as u32).clamp(0, imgx as u32 - 1),
-            ((coord.1 + center.y as i32) as u32).clamp(0, imgy as u32 - 1),
-        );
-        *pixel = image::Rgb([0, 0, 0]);
     }
 
+    println!("INFO: Saving image...");
     state.buf.save("triangles.png").unwrap();
 }
