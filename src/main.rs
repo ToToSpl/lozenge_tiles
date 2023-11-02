@@ -15,9 +15,13 @@ const IMAGE_WIDTH: usize = 8501;
 const IMAGE_HEIGHT: usize = 8501;
 const HEXAGON_LEN: usize = 60;
 const TRIANGLE_HEIGHT: f32 = 50.0;
-const COLOR1: [u8; 3] = [225, 117, 46];
-const COLOR2: [u8; 3] = [114, 225, 105];
-const COLOR3: [u8; 3] = [105, 154, 225];
+// const COLOR1: [u8; 3] = [225, 117, 46];
+// const COLOR2: [u8; 3] = [114, 225, 105];
+// const COLOR3: [u8; 3] = [105, 154, 225];
+
+const COLOR1: [u8; 3] = [200, 42, 62];
+const COLOR2: [u8; 3] = [224, 164, 180];
+const COLOR3: [u8; 3] = [30, 20, 40];
 
 pub struct AppState<'a> {
     pub buf: &'a mut image::ImageBuffer<image::Rgb<u8>, Vec<u8>>,
