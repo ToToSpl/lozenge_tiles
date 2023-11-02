@@ -18,7 +18,7 @@ impl GridRounder {
         }
     }
 
-    pub fn get_coord(self, x: f32, y: f32) -> (i32, i32) {
+    pub fn get_coord(&self, x: f32, y: f32) -> (i32, i32) {
         let x = (x / self.grid_width).round() * self.grid_width;
         let y = (y / self.grid_height).round() * self.grid_height;
         (x as i32, y as i32)

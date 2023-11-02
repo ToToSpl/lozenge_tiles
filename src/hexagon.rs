@@ -67,19 +67,32 @@ impl Hexagon {
         Self { tiles }
     }
 
-    // does not make sense man, change hexagon from hardcoded tiles to dynamic triangles
-    pub fn change_state(mut self, side: u8) {
-        todo!();
+    pub fn change_state(&mut self, side: u8, swap_type: &[HexagonColor; 6]) {
+        let (first, second) = match side {
+            0 => (5, 0),
+            _ => (side, side - 1),
+        };
+        let (first_next, second_next) = (((first + 3) % 6), ((second + 3) % 6));
+        self.tiles[second as usize] = swap_type[first_next as usize];
+        self.tiles[first as usize] = swap_type[second_next as usize];
     }
 
-    pub fn draw(self, state: &mut AppState, center: Point, sub_triangle_height: f32) {
+    pub fn is_inside(&self) -> bool {
+        return self.tiles == HEX_INSIDE;
+    }
+
+    pub fn is_outside(&self) -> bool {
+        return self.tiles == HEX_OUTSIDE;
+    }
+
+    pub fn draw(&self, state: &mut AppState, center: Point) {
         const ANGLES: [f32; 2] = [-std::f32::consts::FRAC_PI_6, std::f32::consts::FRAC_PI_6]; // right, left
 
         let mut points = [Point::new(0.0, 0.0); 6];
         let mut angle = -std::f32::consts::FRAC_PI_3;
         for point in &mut points {
-            point.x = center.x + (2.0 / 3.0 * sub_triangle_height) * f32::cos(angle);
-            point.y = center.y + (2.0 / 3.0 * sub_triangle_height) * f32::sin(angle);
+            point.x = center.x + (2.0 / 3.0 * state.triangle_height) * f32::cos(angle);
+            point.y = center.y + (2.0 / 3.0 * state.triangle_height) * f32::sin(angle);
             angle += std::f32::consts::FRAC_PI_3;
         }
 
@@ -89,7 +102,7 @@ impl Hexagon {
                 HexagonColor::Color2 => state.colors[1],
                 HexagonColor::Color3 => state.colors[2],
             };
-            draw_triangle_equilateral(state, sub_triangle_height, p, ANGLES[i % 2], c_rgb);
+            draw_triangle_equilateral(state, 1.01 * state.triangle_height, p, ANGLES[i % 2], c_rgb);
         }
     }
 }
