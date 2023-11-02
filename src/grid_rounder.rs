@@ -10,8 +10,8 @@ pub struct GridRounder {
 }
 
 impl GridRounder {
-    pub fn new(center: Point, grid_width: f32, grid_height: f32) -> GridRounder {
-        GridRounder {
+    pub fn new(center: Point, grid_width: f32, grid_height: f32) -> Self {
+        Self {
             center,
             grid_width,
             grid_height,
