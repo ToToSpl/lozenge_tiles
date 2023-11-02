@@ -4,7 +4,7 @@ Program to generate set of lozenge tiles. Inspired by this [video](https://youtu
 
 Implementation in rust allows to make tens of milions iterations of monte carlo tile switching in minutes.
 
-![Output image](https://github.com/ToToSpl/lozenge_tiles/tree/main/docs/output.png?raw=true)
+![Output image](https://raw.githubusercontent.com/ToToSpl/lozenge_tiles/main/docs/output.png)
 
 # TODO
 
