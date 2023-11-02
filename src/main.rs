@@ -2,7 +2,9 @@ use std::collections::{HashMap, HashSet};
 mod point;
 use point::Point;
 mod hexagon;
-use hexagon::{Hexagon, HexagonKind};
+use hexagon::{
+    Hexagon, HEX_EDGE1, HEX_EDGE2, HEX_EDGE3, HEX_FILL1, HEX_FILL2, HEX_FILL3, HEX_INSIDE,
+};
 mod grid_rounder;
 use grid_rounder::GridRounder;
 
@@ -11,19 +13,15 @@ pub struct AppState<'a> {
     pub hexagon_map: &'a mut HashMap<(i32, i32), Hexagon>,
     pub triangles_drawn: &'a mut HashSet<(i32, i32)>,
     pub rounder: &'a GridRounder,
+    pub colors: [image::Rgb<u8>; 3],
 }
 
 fn generate_hexagon(state: &mut AppState, side_len: usize, triangle_height: f32) {
-    state.hexagon_map.insert(
-        state.rounder.get_coord(0.0, 0.0),
-        Hexagon::new(HexagonKind::Inside123),
-    );
+    state
+        .hexagon_map
+        .insert(state.rounder.get_coord(0.0, 0.0), Hexagon::new(HEX_INSIDE));
 
-    let kinds = [
-        HexagonKind::Vertical12,
-        HexagonKind::Diagonal23,
-        HexagonKind::Diagonal31,
-    ];
+    let kinds = [HEX_EDGE1, HEX_EDGE2, HEX_EDGE3];
     let mut points = [Point::new(0.0, 0.0); 3];
 
     let mut angle = -std::f32::consts::FRAC_PI_2;
@@ -94,17 +92,11 @@ fn generate_hexagon(state: &mut AppState, side_len: usize, triangle_height: f32)
             checks[i] = Point::cross_mag(&curr_vec, &dir_vecs[2 * i + 1]) > 0.0;
         }
         if checks[0] && !checks[1] {
-            state
-                .hexagon_map
-                .insert(curr, Hexagon::new(HexagonKind::Fill1));
+            state.hexagon_map.insert(curr, Hexagon::new(HEX_FILL3));
         } else if checks[1] && !checks[2] {
-            state
-                .hexagon_map
-                .insert(curr, Hexagon::new(HexagonKind::Fill2));
+            state.hexagon_map.insert(curr, Hexagon::new(HEX_FILL1));
         } else if checks[2] && !checks[0] {
-            state
-                .hexagon_map
-                .insert(curr, Hexagon::new(HexagonKind::Fill3));
+            state.hexagon_map.insert(curr, Hexagon::new(HEX_FILL2));
         }
     }
 }
@@ -137,6 +129,11 @@ fn main() {
         hexagon_map: &mut hexagon_map,
         triangles_drawn: &mut triangles_drawn,
         rounder: &rounder,
+        colors: [
+            image::Rgb([225, 117, 46]),
+            image::Rgb([114, 225, 105]),
+            image::Rgb([105, 154, 225]),
+        ],
     };
 
     generate_hexagon(&mut state, 6, triangle_height);
@@ -149,8 +146,8 @@ fn main() {
         );
 
         let pixel = state.buf.get_pixel_mut(
-            (coord.0 + center.x as i32) as u32,
-            (coord.1 + center.y as i32) as u32,
+            ((coord.0 + center.x as i32) as u32).clamp(0, imgx as u32 - 1),
+            ((coord.1 + center.y as i32) as u32).clamp(0, imgy as u32 - 1),
         );
         *pixel = image::Rgb([0, 0, 0]);
     }
